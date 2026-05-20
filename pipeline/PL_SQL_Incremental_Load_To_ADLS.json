@@ -1,6 +1,37 @@
 {
 	"name": "PL_SQL_Incremental_Load_To_ADLS",
 	"properties": {
+		"activities": [
+			{
+				"name": "Lookup_Old_Watermark",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": "\nSELECT last_watermark_value\nFROM dbo.pipeline_watermark\nWHERE source_table_name = 'retail_customers_source'\n",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "DS_AzureSQL_Parameterized",
+						"type": "DatasetReference",
+						"parameters": {
+							"schemaName": "dbo",
+							"tableName": "pipeline_watermark"
+						}
+					}
+				}
+			}
+		],
 		"parameters": {
 			"sourceSchemaName": {
 				"type": "string",
