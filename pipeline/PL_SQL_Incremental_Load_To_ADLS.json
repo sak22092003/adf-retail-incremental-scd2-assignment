@@ -66,6 +66,79 @@
 						}
 					}
 				}
+			},
+			{
+				"name": "Copy_Incremental_Data",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "Lookup_New_Watermark",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": "SELECT *\nFROM dbo.retail_customers_source\nWHERE updated_at > '@{activity('Lookup_Old_Watermark').output.firstRow.last_watermark_value}'\nAND updated_at <= '@{activity('Lookup_New_Watermark').output.firstRow.new_watermark_value}'\n",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"sink": {
+						"type": "ParquetSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings"
+						},
+						"formatSettings": {
+							"type": "ParquetWriteSettings"
+						}
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "DS_AzureSQL_Parameterized",
+						"type": "DatasetReference",
+						"parameters": {
+							"schemaName": {
+								"value": "@pipeline().parameters.sourceSchemaName",
+								"type": "Expression"
+							},
+							"tableName": {
+								"value": "@pipeline().parameters.sourceTableName",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "DS_ADLS_Parquet_Parameterized",
+						"type": "DatasetReference",
+						"parameters": {
+							"containerName": "raw",
+							"folderPath": "retail/customers/incremental/",
+							"fileName": "customers_incremental.parquet"
+						}
+					}
+				]
 			}
 		],
 		"parameters": {
